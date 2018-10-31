@@ -238,8 +238,8 @@ public class SSBypass implements IXposedHookLoadPackage {
             movie.setMatrix(Matrix.ROTATE_270);
             File export = new File(replaceLocation + "/export_temp.mp4");
 
-            WritableByteChannel export = new FileOutputStream(export).getChannel();
-            new DefaultMp4Builder().build(movie).writeContainer(export);
+            WritableByteChannel exportChannel = new FileOutputStream(export).getChannel();
+            new DefaultMp4Builder().build(movie).writeContainer(exportChannel);
             return export;
         } catch (IOException e) {
             XposedBridge.log("Failed to rotate shared video");
