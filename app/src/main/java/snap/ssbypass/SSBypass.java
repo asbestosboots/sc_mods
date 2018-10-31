@@ -19,6 +19,7 @@ import de.robv.android.xposed.XC_MethodReplacement;
 import com.google.common.io.Files;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import android.content.Intent;
 import java.io.InputStream;
@@ -185,10 +186,10 @@ public class SSBypass implements IXposedHookLoadPackage {
 
                         streamCopy(output, new FileOutputStream(saveFile));
 
-                        // todo: automatically unzip zipped snaps
-                        // Closer closer = Closer.create();
-                        //ZipInputStream zip = closer.register(new FileInputStream(saveFile));
-
+                        if (isZipped) {
+                            String unzipPath = SaveLocation + username + "/" + username + "." + readableTimestamp + key.hashCode();
+                            unzipMedia(new FileInputStream(saveFile), unzipPath);
+                        }
                     }
                 });
 
@@ -271,6 +272,46 @@ public class SSBypass implements IXposedHookLoadPackage {
         }
 
         return false;
+    }
+
+    private void unzipMedia(FileInputStream media, String savePath) { // video media that has an overlay come in as a zip, method to unzip all media and add the appropriate file extensions
+        Closer closer = Closer.create();
+
+        try {
+            ZipInputStream zipStream = closer.register(new ZipInputStream(media));
+
+            ZipEntry currentEntry = zipStream.getNextEntry();
+            while (currentEntry != null) {
+                if (currentEntry.getName().contains("media~")) {
+                    File saveTo = new File(savePath + ".mp4");
+                    int index = 0;
+
+                    while (saveTo.exists()) {
+                        saveTo = new File(savePath + index++ + ".mp4");
+                    }
+                    ByteStreams.copy(zipStream, closer.register(new FileOutputStream(saveTo)));
+                }
+
+                if (currentEntry.getName().contains("overlay~")) {
+                    File saveTo = new File(savePath + ".jpg");
+                    int index = 0;
+
+                    while (saveTo.exists()) {
+                        saveTo = new File(savePath + index++ + ".jpg");
+                    }
+                    ByteStreams.copy(zipStream, closer.register(new FileOutputStream(saveTo)));
+                }
+                currentEntry = zipStream.getNextEntry();
+            }
+
+        } catch (IOException e) {
+            XposedBridge.log("Failed to unzip zipped media");
+            XposedBridge.log(e);
+        } finally {
+            try {
+                closer.close();
+            } catch (IOException ignored) {}
+        }
     }
 
 }
