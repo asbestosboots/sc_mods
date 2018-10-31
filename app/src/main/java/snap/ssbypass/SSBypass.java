@@ -248,7 +248,7 @@ public class SSBypass implements IXposedHookLoadPackage {
     }
 */
 
-    public static boolean streamCopy(ByteArrayOutputStream byteOutput, OutputStream targetStream) { // direct snap saving: copy stream
+    private static boolean streamCopy(ByteArrayOutputStream byteOutput, OutputStream targetStream) { // direct snap saving: copy stream
         Closer closer = Closer.create();
 
         try {
