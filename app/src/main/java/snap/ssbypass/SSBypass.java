@@ -1,7 +1,7 @@
 package snap.ssbypass;
 
 import android.graphics.Bitmap;
-
+import java.io.File;
 import static de.robv.android.xposed.XposedHelpers.findAndHookMethod;
 import static de.robv.android.xposed.XposedHelpers.findAndHookConstructor;
 import static de.robv.android.xposed.XposedHelpers.getAdditionalInstanceField;
@@ -16,19 +16,21 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 import de.robv.android.xposed.XC_MethodReplacement;
-
+import com.google.common.io.Files;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import android.content.Intent;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Files;
+import java.nio.channels.WritableByteChannel;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import android.net.Uri;
 
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closer;
@@ -36,10 +38,16 @@ import com.google.common.io.Flushables;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+/*
+import com.googlecode.mp4parser.authoring.Movie;
+import com.googlecode.mp4parser.authoring.builder.DefaultMp4Builder;
+import com.googlecode.mp4parser.authoring.container.mp4.MovieCreator;
+import com.googlecode.mp4parser.util.Matrix;
+*/
 
 public class SSBypass implements IXposedHookLoadPackage {
     AtomicBoolean hasHooked = new AtomicBoolean();
-    String replaceImageLocation = "/storage/emulated/0/Snapchat/";
+    String replaceLocation = "/storage/emulated/0/Snapchat/";
     String SaveLocation = "/storage/emulated/0/Saved/";
     BitmapFactory.Options bitmapOptions = new android.graphics.BitmapFactory.Options();
 
@@ -60,25 +68,51 @@ public class SSBypass implements IXposedHookLoadPackage {
                     }
                 });
 
-                // todo: video sharing
-                findAndHookMethod("acti", lpparam.classLoader, "a", Bitmap.class, Integer.class, String.class, long.class, boolean.class, int.class, "fqn$b", new XC_MethodHook() { // image sharing
+                findAndHookMethod("acti", lpparam.classLoader, "a", Bitmap.class, Integer.class, String.class, long.class, boolean.class, int.class, "fqn$b", new XC_MethodHook() {
                     @Override
                     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                         XposedBridge.log("Image taken. Proceeding with hook.");
 
-                        File jpeg = new File(replaceImageLocation + "replace.jpeg");
+                        File jpeg = new File(replaceLocation + "replace.jpeg");
                         if (jpeg.exists()) {
                             Bitmap replace = BitmapFactory.decodeFile(jpeg.getPath(), bitmapOptions);
                             param.args[0] = rotateBitmap(replace, -90);
 
-                            File findAvailable = new File(replaceImageLocation + "replaced.jpeg");
+                            File findAvailable = new File(replaceLocation + "replaced.jpeg");
                             int index = 0;
 
                             while(findAvailable.exists()) {
-                                findAvailable = new File(replaceImageLocation + "replaced" + index++ + ".jpeg");
+                                findAvailable = new File(replaceLocation + "replaced" + index++ + ".jpeg");
                             }
                             jpeg.renameTo(findAvailable);
                             XposedBridge.log("Replaced image.");
+                        } else XposedBridge.log("Nothing to replace");
+                    }
+                });
+
+                findAndHookMethod("actn", lpparam.classLoader, "a" , Uri.class, int.class, boolean.class, "asmh", long.class, long.class, new XC_MethodHook() {
+                    @Override
+                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                        XposedBridge.log("Video taken. Proceeding with hook.");
+                        Uri uri = (Uri) param.args[0];
+                        File recordedVideo = new File(uri.getPath());
+                        File videoToShare =  new File(replaceLocation + "replace.mp4");
+
+                        // Sometimes, the video rotation is wrong. I wrote some code to rotate it to the correct angle,
+                        // however the angle is correct more often than not so I won't use this until I figure out a way to pick whether to rotate our not
+                        //
+                        // File rotatedShareVideo = rotateMp4File(videoToShare);
+
+                        if (videoToShare.exists()) {
+                            Files.copy(videoToShare, recordedVideo);
+                            File findAvailable = new File(replaceLocation + "replaced.mp4");
+                            int index = 0;
+
+                            while(findAvailable.exists()) {
+                                findAvailable = new File(replaceLocation + "replaced" + index++ + ".mp4");
+                            }
+                            videoToShare.renameTo(findAvailable);
+                            XposedBridge.log("Replaced Video.");
                         } else XposedBridge.log("Nothing to replace");
                     }
                 });
@@ -165,6 +199,9 @@ public class SSBypass implements IXposedHookLoadPackage {
                     }
                 });
 
+                // File exportTemp = new File(replaceLocation + "/export_temp.mp4");
+                // if (exportTemp.exists()) exportTemp.delete();
+
                 XposedBridge.log("Hooked (1.6)");
                 XposedBridge.log("Hooked (1.6)");
                 XposedBridge.log("Hooked (1.6)");
@@ -193,6 +230,23 @@ public class SSBypass implements IXposedHookLoadPackage {
         matrix.postRotate(ang);
         return android.graphics.Bitmap.createBitmap(src, 0, 0, src.getWidth(), src.getHeight(), matrix, true);
     }
+
+/*
+    private File rotateMp4(File mp4) {
+        try {
+            Movie movie = MovieCreator.build(mp4.getAbsolutePath());
+            movie.setMatrix(Matrix.ROTATE_270);
+            File export = new File(replaceLocation + "/export_temp.mp4");
+
+            WritableByteChannel export = new FileOutputStream(export).getChannel();
+            new DefaultMp4Builder().build(movie).writeContainer(export);
+            return export;
+        } catch (IOException e) {
+            XposedBridge.log("Failed to rotate shared video");
+            XposedBridge.log(e);
+        }
+    }
+*/
 
     public static boolean streamCopy(ByteArrayOutputStream byteOutput, OutputStream targetStream) { // direct snap saving: copy stream
         Closer closer = Closer.create();
