@@ -7,7 +7,7 @@ import static de.robv.android.xposed.XposedHelpers.findAndHookConstructor;
 import static de.robv.android.xposed.XposedHelpers.getAdditionalInstanceField;
 import static de.robv.android.xposed.XposedHelpers.setAdditionalInstanceField;
 import static de.robv.android.xposed.XposedHelpers.setObjectField;
-
+import static de.robv.android.xposed.XposedHelpers.callMethod;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import android.content.Intent;
 import java.io.InputStream;
+import android.content.Context;
 import java.io.OutputStream;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Path;
@@ -31,7 +32,7 @@ import java.util.List;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import android.net.Uri;
-
+import java.util.LinkedHashMap;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closer;
 import com.google.common.io.Flushables;
@@ -60,13 +61,10 @@ public class SSBypass implements IXposedHookLoadPackage {
         findAndHookMethod("android.app.Application", lpparam.classLoader, "attach", android.content.Context.class, new XC_MethodHook() { // snapchat is a multidex application, wait for it to be attached
             @Override
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                findAndHookMethod("arkl", lpparam.classLoader, "a", "gq", Object.class, new XC_MethodReplacement() { // kill screenshot detector
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log("Screenshot detector hooked.");
-                        return null;
-                    }
-                });
+
+               // more efficent bypasses justin was here also it hooks both checks
+                findAndHookMethod("arkl", lpparam.classLoader, "a", LinkedHashMap.class, XC_MethodReplacement.DO_NOTHING);
+                findAndHookMethod("iok", lpparam.classLoader, "a", LinkedHashMap.class, XC_MethodReplacement.DO_NOTHING);
 
                 findAndHookMethod("acti", lpparam.classLoader, "a", Bitmap.class, Integer.class, String.class, long.class, boolean.class, int.class, "fqn$b", new XC_MethodHook() {
                     @Override
@@ -90,7 +88,34 @@ public class SSBypass implements IXposedHookLoadPackage {
                     }
                 });
 
-                findAndHookMethod("actn", lpparam.classLoader, "a" , Uri.class, int.class, boolean.class, "asmh", long.class, long.class, new XC_MethodHook() {
+                class RootDetectorOverrides extends XC_MethodReplacement {
+
+                    @Override
+                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                        return false;
+                    }
+
+                }
+                class RootDetectorStringOverrides extends XC_MethodReplacement {
+
+                    @Override
+                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                        return "false";
+                    }
+                }
+                    // Snapchat
+                    findAndHookMethod( "arkj", lpparam.classLoader, "b", new RootDetectorOverrides());
+                    findAndHookMethod( "arkj", lpparam.classLoader, "c", new RootDetectorOverrides());
+                    findAndHookMethod( "arkj", lpparam.classLoader, "d", new RootDetectorOverrides());
+                    findAndHookMethod( "arkj", lpparam.classLoader, "e", new RootDetectorOverrides());
+
+                    // Crashlytics
+                    findAndHookMethod("bbfl", lpparam.classLoader, "f", Context.class, new RootDetectorOverrides());
+
+                    // Braintree
+                    findAndHookMethod("sm", lpparam.classLoader, "a", new RootDetectorStringOverrides());
+
+                    findAndHookMethod("actn", lpparam.classLoader, "a" , Uri.class, int.class, boolean.class, "asmh", long.class, long.class, new XC_MethodHook() {
                     @Override
                     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                         XposedBridge.log("Video taken. Proceeding with hook.");
@@ -126,7 +151,7 @@ public class SSBypass implements IXposedHookLoadPackage {
                         Boolean isVideo = (boolean) XposedHelpers.callMethod(metadata, "bb_");
                         Boolean isZipped = (boolean) XposedHelpers.callMethod(metadata, "bj");
 
-                        String username = (String) XposedHelpers.getObjectField(metadata, "aH");
+                        String username = (String) XposedHelpers.callStaticMethod(XposedHelpers.findClass("com.snapchat.android.core.user.UserPrefsImpl", lpparam.classLoader), "N");
                         Long timestamp = (long) XposedHelpers.callMethod(metadata, "aF_");
 
                         Object cryptoHolder = param.getResult();
@@ -189,13 +214,6 @@ public class SSBypass implements IXposedHookLoadPackage {
                         // Closer closer = Closer.create();
                         //ZipInputStream zip = closer.register(new FileInputStream(saveFile));
 
-                    }
-                });
-
-                findAndHookMethod("aqwh", lpparam.classLoader, "a", "ww", int.class, int.class, new XC_MethodHook() { // direct snap saving: prevent type checking from happening when we return a duplicate inputstream
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                        setObjectField(param.thisObject, "d", false);
                     }
                 });
 
