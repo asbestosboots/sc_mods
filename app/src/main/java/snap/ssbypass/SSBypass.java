@@ -31,14 +31,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import java.util.LinkedHashMap;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closer;
 import com.google.common.io.Flushables;
+import android.app.Activity;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-
+import android.content.SharedPreferences.Editor;
 /*
 import com.googlecode.mp4parser.authoring.Movie;
 import com.googlecode.mp4parser.authoring.builder.DefaultMp4Builder;
@@ -58,9 +61,27 @@ public class SSBypass implements IXposedHookLoadPackage {
 
         bitmapOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;
 
+
+
+        //get username hack (No addy needed ;))
+
+        findAndHookMethod("android.app.Application",lpparam.classLoader, "activity",android.content.Context.class, new XC_MethodHook() { // snapchat is a multidex application, wait for it to be attached
+                public String GetUsername(Activity activity){
+                    Context mContext;
+                    activity.getPreferences(Context.MODE_PRIVATE);
+                    //TODO implement xml reader from ST
+                    return "test";
+                   // return activity(Memes.USERNAME, null);
+                }
+        });
+
+
+
         findAndHookMethod("android.app.Application", lpparam.classLoader, "attach", android.content.Context.class, new XC_MethodHook() { // snapchat is a multidex application, wait for it to be attached
             @Override
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+
+
 
                // more efficent bypasses justin was here also it hooks both checks
                 findAndHookMethod("arkl", lpparam.classLoader, "a", LinkedHashMap.class, XC_MethodReplacement.DO_NOTHING);
