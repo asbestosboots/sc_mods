@@ -26,4 +26,5 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     compileOnly 'de.robv.android.xposed:api:82'
     api 'com.google.guava:guava:26.0-android'
+    // api 'com.googlecode.mp4parser:isoparser:1.1.21'
 }
