@@ -6,3 +6,8 @@ Tested on S9 using [VirtualXposed](https://github.com/android-hacker/VirtualXpos
 
 
 Inspired from [SnapTools](https://github.com/Andrerm124/SnapTools_OpenSource)
+
+## Features
+* Screenshot bypass
+* Automatically save direct snaps
+* Share videos and images directly from Internal Storage
