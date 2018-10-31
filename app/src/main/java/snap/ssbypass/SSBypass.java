@@ -74,18 +74,18 @@ public class SSBypass implements IXposedHookLoadPackage {
                     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                         XposedBridge.log("Image taken. Proceeding with hook.");
 
-                        File jpeg = new File(replaceLocation + "replace.jpeg");
-                        if (jpeg.exists()) {
-                            Bitmap replace = BitmapFactory.decodeFile(jpeg.getPath(), bitmapOptions);
+                        File jpg = new File(replaceLocation + "replace.jpg");
+                        if (jpg.exists()) {
+                            Bitmap replace = BitmapFactory.decodeFile(jpg.getPath(), bitmapOptions);
                             param.args[0] = rotateBitmap(replace, -90);
 
-                            File findAvailable = new File(replaceLocation + "replaced.jpeg");
+                            File findAvailable = new File(replaceLocation + "replaced.jpg");
                             int index = 0;
 
                             while(findAvailable.exists()) {
-                                findAvailable = new File(replaceLocation + "replaced" + index++ + ".jpeg");
+                                findAvailable = new File(replaceLocation + "replaced" + index++ + ".jpg");
                             }
-                            jpeg.renameTo(findAvailable);
+                            jpg.renameTo(findAvailable);
                             XposedBridge.log("Replaced image.");
                         } else XposedBridge.log("Nothing to replace");
                     }
