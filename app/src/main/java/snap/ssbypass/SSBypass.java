@@ -138,12 +138,6 @@ public class SSBypass implements IXposedHookLoadPackage {
                         setAdditionalInstanceField(encryptor, "SNAP_ISZIPPED", isZipped);
                         setAdditionalInstanceField(encryptor, "SNAP_AUTHOR", username);
                         setAdditionalInstanceField(encryptor, "SNAP_TIMESTAMP", timestamp);
-
-                        XposedBridge.log("akuo: " + key);
-                        XposedBridge.log("isVideo: " + (isVideo ? "true" : "false"));
-                        XposedBridge.log("isZipped: " + (isZipped ? "true" : "false"));
-                        XposedBridge.log("Username: " + username);
-                        XposedBridge.log("Timestamp: " + timestamp.toString());
                     }
                 });
 
@@ -167,13 +161,6 @@ public class SSBypass implements IXposedHookLoadPackage {
                         }
                         ByteArrayInputStream copiedInputStream = new ByteArrayInputStream(output.toByteArray());
                         param.setResult(copiedInputStream);
-
-                        XposedBridge.log("Got this far:");
-                        XposedBridge.log("isVideo: " + (isVideo ? "true" : "false"));
-                        XposedBridge.log("isZipped: " + (isZipped ? "true" : "false"));
-                        XposedBridge.log("Username: " + username);
-                        XposedBridge.log("Timestamp: " + timestamp.toString());
-                        XposedBridge.log("End of this far");
 
                         String readableTimestamp = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS", java.util.Locale.getDefault()).format(timestamp);
                         String savePath = SaveLocation + username + "/" + username + "." + readableTimestamp + key.hashCode() + (isZipped ? ".zip" : (isVideo ? ".mp4" : ".jpg"));
