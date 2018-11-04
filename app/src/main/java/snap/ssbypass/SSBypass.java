@@ -114,6 +114,73 @@ public class SSBypass implements IXposedHookLoadPackage {
                     }
                 });
 
+                findAndHookMethod("akwf", lpparam.classLoader, "e", new XC_MethodHook() { // video chat saving
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        Object metadata = getObjectField(param.thisObject, "c"); // akqb
+
+                        Uri video = (Uri) callMethod(metadata, "eV_");
+
+                        String username = (String) XposedHelpers.getObjectField(metadata, "aO");
+                        Long timestamp = (long) XposedHelpers.callMethod(metadata, "aF_");
+                        String key = (String) XposedHelpers.getObjectField(metadata, "l");
+
+                        java.util.Map<String, Object> isZippedMap = (java.util.Map) XposedHelpers.callMethod(metadata, "ac");
+                        Boolean isZipped = (Boolean) isZippedMap.get("is_zipped"); // should be same thing as getting akwf.c.N, but for some reason it returns a long instead of a boolean
+
+                        String readableTimestamp = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS", java.util.Locale.getDefault()).format(timestamp);
+                        String savePath = SaveLocation + username + "/" + username + "." + readableTimestamp + "-CHAT-" + key + (isZipped ? ".zip" : ".mp4");
+                        File saveFile = new File(savePath);
+
+                        File saveFolder = new File(SaveLocation + username);
+                        saveFolder.mkdirs();
+
+                        Files.copy(new File(video.getPath()), saveFile);
+
+                        if (isZipped) {
+                            String unzipPath = SaveLocation + username + "/" + username + "." + "-CHAT-" + readableTimestamp + key;
+                            unzipMedia(new FileInputStream(saveFile), unzipPath);
+                        }
+
+                        XposedHelpers.setAdditionalInstanceField(metadata, "CHAT_METADATA_ISVIDEO", true);
+                    }
+                });
+
+                findAndHookMethod("akcp", lpparam.classLoader, "b", "akqb", new XC_MethodHook() { // image chat saving
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        Object metadata = param.args[0];
+
+                        String key = (String) XposedHelpers.getObjectField(metadata, "l");
+                        Boolean isVideo = false;
+                        try {
+                            isVideo = (boolean) getAdditionalInstanceField(metadata, "CHAT_METADATA_ISVIDEO");
+                        } catch (NullPointerException ignored) {}
+
+                        if (isVideo) return; // If it's a video, we've already hooked it through akwf
+
+                        String username = (String) XposedHelpers.getObjectField(metadata, "aO");
+                        Long timestamp = (long) XposedHelpers.callMethod(metadata, "aF_");
+
+                        Object encryptor = param.getResult();
+
+                        XposedBridge.log("key: " + key);
+                        XposedBridge.log("isVideo: " + isVideo);
+                        XposedBridge.log("username: " + username);
+                        XposedBridge.log("timestamp: " + timestamp);
+
+                        setAdditionalInstanceField(encryptor, "SNAP_KEY", key);
+                        setAdditionalInstanceField(encryptor, "SNAP_ISVIDEO", isVideo);
+                        setAdditionalInstanceField(encryptor, "SNAP_ISZIPPED", false);
+                        setAdditionalInstanceField(encryptor, "SNAP_AUTHOR", username);
+                        setAdditionalInstanceField(encryptor, "SNAP_TIMESTAMP", timestamp);
+
+                        // known issue: discovery stories that are shared (like the ones from brother/mashable) are saved
+                        // not only are they saved, but they're also saved as zips even though they aren't zipped
+                        // normal stories that are shared are also saved, however they're saved in the correct format
+                    }
+                });
+
                 findAndHookMethod("akuo", lpparam.classLoader, "a", "aprs", String.class, new XC_MethodHook() { // store metadata for direct snap saving
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable { // direct snap sharing
@@ -148,6 +215,11 @@ public class SSBypass implements IXposedHookLoadPackage {
                         String username = (String) getAdditionalInstanceField(param.thisObject, "SNAP_AUTHOR");
                         Long timestamp = (long) getAdditionalInstanceField(param.thisObject, "SNAP_TIMESTAMP");
 
+                        Boolean isChatMedia = false;
+                        try {
+                            isChatMedia = (boolean) getAdditionalInstanceField(param.thisObject, "SNAP_ISCHAT");
+                        } catch (NullPointerException ignored) {}
+
                         InputStream stream = (InputStream) param.getResult();
                         ByteArrayOutputStream output = new ByteArrayOutputStream();
                         try {
@@ -159,7 +231,7 @@ public class SSBypass implements IXposedHookLoadPackage {
                         param.setResult(copiedInputStream);
 
                         String readableTimestamp = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS", java.util.Locale.getDefault()).format(timestamp);
-                        String savePath = SaveLocation + username + "/" + username + "." + readableTimestamp + key.hashCode() + (isZipped ? ".zip" : (isVideo ? ".mp4" : ".jpg"));
+                        String savePath = SaveLocation + username + "/" + username + "." + readableTimestamp + (isChatMedia ? ("-CHAT-" + key) : key.hashCode()) + (isZipped ? ".zip" : (isVideo ? ".mp4" : ".jpg"));
 
                         File saveFolder = new File(SaveLocation + username);
                         saveFolder.mkdirs();
@@ -170,7 +242,7 @@ public class SSBypass implements IXposedHookLoadPackage {
                         streamCopy(output, new FileOutputStream(saveFile));
 
                         if (isZipped) {
-                            String unzipPath = SaveLocation + username + "/" + username + "." + readableTimestamp + key.hashCode();
+                            String unzipPath = SaveLocation + username + "/" + username + "." + readableTimestamp + (isChatMedia ? ("-CHAT-" + key) : key.hashCode());
                             unzipMedia(new FileInputStream(saveFile), unzipPath);
                         }
                     }
