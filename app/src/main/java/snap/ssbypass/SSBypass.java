@@ -258,9 +258,9 @@ public class SSBypass implements IXposedHookLoadPackage {
                 // File exportTemp = new File(replaceLocation + "/export_temp.mp4");
                 // if (exportTemp.exists()) exportTemp.delete();
 
-                XposedBridge.log("Hooked (1.8)");
-                XposedBridge.log("Hooked (1.8)");
-                XposedBridge.log("Hooked (1.8)");
+                XposedBridge.log("Hooked (2.0)");
+                XposedBridge.log("Hooked (2.0)");
+                XposedBridge.log("Hooked (2.0)");
             }
         });
 
