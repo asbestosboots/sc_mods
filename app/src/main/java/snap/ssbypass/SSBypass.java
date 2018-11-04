@@ -2,9 +2,11 @@ package snap.ssbypass;
 
 import android.graphics.Bitmap;
 import java.io.File;
+
+import static de.robv.android.xposed.XposedHelpers.callMethod;
 import static de.robv.android.xposed.XposedHelpers.findAndHookMethod;
-import static de.robv.android.xposed.XposedHelpers.findAndHookConstructor;
 import static de.robv.android.xposed.XposedHelpers.getAdditionalInstanceField;
+import static de.robv.android.xposed.XposedHelpers.getObjectField;
 import static de.robv.android.xposed.XposedHelpers.setAdditionalInstanceField;
 import static de.robv.android.xposed.XposedHelpers.setObjectField;
 
@@ -12,7 +14,6 @@ import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 import de.robv.android.xposed.XC_MethodReplacement;
@@ -21,14 +22,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import android.content.Intent;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.channels.WritableByteChannel;
-import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.ArrayList;
-import java.util.List;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import android.net.Uri;
@@ -213,10 +209,10 @@ public class SSBypass implements IXposedHookLoadPackage {
     }
 
 
-    private Bitmap rotateBitmap(android.graphics.Bitmap src, int ang) { // rotate bitmap to fix image rotation bug when sharing
+    private Bitmap rotateBitmap(Bitmap src, int ang) { // rotate bitmap to fix image rotation bug when sharing
         android.graphics.Matrix matrix = new android.graphics.Matrix();
         matrix.postRotate(ang);
-        return android.graphics.Bitmap.createBitmap(src, 0, 0, src.getWidth(), src.getHeight(), matrix, true);
+        return Bitmap.createBitmap(src, 0, 0, src.getWidth(), src.getHeight(), matrix, true);
     }
 
 /*
