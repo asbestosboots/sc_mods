@@ -13,7 +13,7 @@
         android:value="true" />
     <meta-data
         android:name="xposeddescription"
-        android:value="Break Snapchats screenshot watchdog using xposed." />
+        android:value="Various mods to Snapchat using Xposed. " />
     <meta-data
         android:name="xposedminversion"
         android:value="53" />
