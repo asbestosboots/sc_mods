@@ -57,13 +57,7 @@ public class SSBypass implements IXposedHookLoadPackage {
         findAndHookMethod("android.app.Application", lpparam.classLoader, "attach", android.content.Context.class, new XC_MethodHook() { // snapchat is a multidex application, wait for it to be attached
             @Override
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                findAndHookMethod("arkl", lpparam.classLoader, "a", "gq", Object.class, new XC_MethodReplacement() { // kill screenshot detector
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log("Screenshot detector hooked.");
-                        return null;
-                    }
-                });
+                findAndHookMethod("arkl", lpparam.classLoader, "a", "gq", Object.class, XC_MethodReplacement.DO_NOTHING); // Screenshot Bypass
 
                 findAndHookMethod("acti", lpparam.classLoader, "a", Bitmap.class, Integer.class, String.class, long.class, boolean.class, int.class, "fqn$b", new XC_MethodHook() {
                     @Override
